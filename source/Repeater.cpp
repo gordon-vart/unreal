@@ -83,6 +83,118 @@ void ARepeater::SpawnLine()
 	}
 }
 
+void ARepeater::SpawnPolygon()
+{
+	FVector l = GetActorLocation();
+
+	FVector loc = l;
+	if (Sides < 3)
+	{
+		Sides = 3;
+	}
+	// anchors
+	TArray<FVector> anchors;
+	for (int n = 0; n < Sides; n++)
+	{
+		float angle = 2 * UKismetMathLibrary::GetPI() *n / Sides;
+		float x = Radius * UKismetMathLibrary::Cos(angle);
+		float y = Radius * UKismetMathLibrary::Sin(angle);
+		FVector p = FVector(l.X + x, l.Y + y, l.Z);
+		FVector k = l + GetActorRotation().Quaternion() * (p - l);
+		anchors.Add(k);
+	}
+
+	// side item count
+	if (ItemPerSide <= 0)
+	{
+		ItemPerSide = 1;
+	}
+	else	if (ItemPerSide > 250)
+	{
+		ItemPerSide = 250;
+	}
+	TArray<FVector> points;
+	for (int i = 1; i < anchors.Num(); i++)
+	{
+		AddPoints(anchors[i - 1], anchors[i], ItemPerSide, points);
+	}
+	AddPoints(anchors.Last(), anchors[0], ItemPerSide, points);
+	if (RenderPolygonVertices)
+	{
+		points.Append(anchors);
+	}
+
+	FVector locoffset = FVector::ZeroVector;
+	float totalRotations = 0;
+	if (Rotations <= 0)
+	{
+		Rotations = 1;
+	}
+	while (totalRotations < Rotations)
+	{
+		for (int i = 0; i < points.Num(); i++)
+		{
+			// calc angle
+			FVector vdir = GetActorLocation();
+			FVector dir = (points[i] - GetActorLocation());
+			dir.Normalize();
+			float fbdot = FVector::DotProduct(GetActorForwardVector(), dir);
+			float lrdot = FVector::DotProduct(GetActorRightVector(), dir);
+			float angle = UKismetMathLibrary::DegAcos(fbdot);
+			if (lrdot < 0)
+			{
+				angle = 180 + (180 - angle);
+			}
+
+			if (!isAngleIgnored(angle))
+			{
+				// rot
+				FRotator rot = FRotator::ZeroRotator;
+				FVector fwd = FVector::ZeroVector;
+				if (FaceInward)
+				{
+					fwd = l - points[i];
+					rot = fwd.Rotation();
+				}
+				else if (FaceOutward)
+				{
+					fwd = points[i] - l;
+					rot = fwd.Rotation();
+				}
+				rot = UKismetMathLibrary::ComposeRotators(rot, RotationOffset);
+				//fwd = rot.RotateVector(fwd);
+
+
+				// render mesh instance
+				FTransform transform = FTransform();
+
+				// add offset
+				FVector p = points[i];
+				fwd.Normalize();
+				FRotator rotright = FRotator(0, 90, 0);
+				FVector right = rotright.RotateVector(fwd);
+				p += GetActorUpVector() * (locoffset.Z / ItemPerSide);
+				p += right * (locoffset.Y / ItemPerSide);
+				FVector fp = p + (fwd * (locoffset.X / ItemPerSide));
+				//DrawDebugDirectionalArrow(GetWorld(), p, fp, 5, FColor::Green, false, 60, 0, 5);
+				transform.SetLocation(fp);
+
+				transform.SetRotation(FQuat(rot));
+				transform.SetScale3D(Scale);
+				hism->AddInstance(transform);
+
+
+			}
+			locoffset += LocationIncrement;
+			totalRotations += 1 / (float)points.Num();
+			if (totalRotations > Rotations)
+			{
+				break;
+			}
+		}
+	}
+}
+
 bool ARepeater::isAngleIgnored(float angle)
 {
 	bool rc = SkipDegreeRanges.ContainsByPredicate([angle](FVector range)
@@ -90,6 +202,21 @@ bool ARepeater::isAngleIgnored(float angle)
 		return angle >= range.X && angle <= range.Y;
 	});
 	return rc;
+}
+
+void ARepeater::AddPoints(FVector start, FVector end, int items, TArray<FVector> &points)
+{
+	FVector dir = end - start;
+	float len = dir.Size();
+	float offset = len / (items + 1);
+	dir.Normalize();
+	for (int i = 0; i < items; i++)
+	{
+		FVector p = start + (dir * (offset*(i + 1)));
+		points.Add(p);
+	}
+
+	return;
 }
 
 // Called when the game starts or when spawned
@@ -136,13 +263,14 @@ void ARepeater::OnSpawn()
 	hism->SetStaticMesh(mesh);
 	//this->FinishAndRegisterComponent(hism);
 
-	if (RenderCircle)
-	{
-		SpawnCircle();
-	}
+
 	if (RenderLine)
 	{
 		SpawnLine();
+	}
+	if (RenderPolygon)
+	{
+		SpawnPolygon();
 	}
 
 }
