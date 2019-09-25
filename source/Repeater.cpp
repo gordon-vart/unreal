@@ -149,19 +149,19 @@ void ARepeater::SpawnPolygon()
 			if (!isAngleIgnored(angle))
 			{
 				// rot
-				FRotator rot = FRotator::ZeroRotator;
+				FRotator rot = RotationOffset;
 				FVector fwd = FVector::ZeroVector;
 				if (FaceInward)
 				{
 					fwd = l - points[i];
-					rot = fwd.Rotation();
+					
 				}
 				else if (FaceOutward)
 				{
 					fwd = points[i] - l;
-					rot = fwd.Rotation();
 				}
-				rot = UKismetMathLibrary::ComposeRotators(rot, RotationOffset);
+				rot = UKismetMathLibrary::ComposeRotators(rot, fwd.Rotation());
+				//rot = UKismetMathLibrary::ComposeRotators(rot, RotationOffset);
 				//fwd = rot.RotateVector(fwd);
 
 
