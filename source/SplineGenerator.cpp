@@ -113,10 +113,10 @@ void ASplineGenerator::GenerateComponents(USplineComponent * spline)
 
 }
 
-void ASplineGenerator::GetLTSAtDistance(float distance, FVector & loc, FVector & tan, FVector & scale)
+void ASplineGenerator::GetLTSAtDistance(float distance, FVector & loc, FVector & tan, FVector & sca)
 {
 	loc = splineComponent->GetLocationAtDistanceAlongSpline(distance, ESplineCoordinateSpace::Local);
 	tan = splineComponent->GetTangentAtDistanceAlongSpline(distance, ESplineCoordinateSpace::Local);
-	scale = splineComponent->GetScaleAtDistanceAlongSpline(distance);
+	sca = splineComponent->GetScaleAtDistanceAlongSpline(distance);
 
 }

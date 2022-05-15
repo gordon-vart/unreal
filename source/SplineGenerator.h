@@ -32,7 +32,7 @@ public:
 	UFUNCTION()
 		void GenerateComponents(USplineComponent *spline);
 	UFUNCTION()
-		void GetLTSAtDistance(float distance, FVector &loc, FVector &tan, FVector &scale);
+		void GetLTSAtDistance(float distance, FVector &loc, FVector &tan, FVector &sca);
 	UPROPERTY()
 		TArray<USplineMeshComponent *> components;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "General")
